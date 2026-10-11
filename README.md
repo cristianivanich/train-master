@@ -1,10 +1,11 @@
-# Trainyard
+# Train Master Puzzle
 
-A recreation of the iOS app Trainyard in React
+A cozy railway puzzle game built with React and TypeScript.
 
-## How to play
-You can [play here](https://rlerrr.github.io/trainyard) on github, or download the source and `npm run start` to launch the game.
+Run it locally with `npm install` and `npm start`.
 
-Use the cursor to click and drag new track.  Both mobile and desktop should work.
+## Credits
 
-All regular, bonus, and featured puzzles have been recreated and should be fully completable.
+This project is derived from [react-trainyard](https://github.com/rlerrr/trainyard) by rlerrr, released under the MIT License (see `LICENSE`, which must be kept with any copy of this code). The puzzle gameplay follows the iOS game Trainyard.
+
+The Ghibli-inspired artwork, title, animation and train shed in this version are new work.

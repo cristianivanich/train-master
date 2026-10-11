@@ -1,7 +1,8 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Game, GameCell, GameState } from '../Game/Game';
 import { findLevelByName, puzzleGroups } from '../Game/Levels';
 import { showRewardedAd } from '../Game/AdService';
+import { playSound } from '../Game/Audio';
 import { isUnlocked, saveSolution, setUnlocked } from '../Game/Storage';
 import { Undo, UndoContext, UndoState } from '../Game/Undo';
 import Button, { ButtonColumn } from './Button';
@@ -35,10 +36,38 @@ function GameCanvas({ mode, setMode }: { mode: Mode, setMode: (value: Mode) => v
         }
     }, [game, mode]);
 
+    //Sound cues. Each fires once per run: the first departure, the first arrival, then the outcome.
+    useEffect(() => {
+        if (mode === "Run") {
+            playSound("depart");
+        }
+    }, [mode]);
+
+    let trainsLeftToDeliver = 0;
+    gameState.targetState.forEach(remaining => { trainsLeftToDeliver += remaining.length; });
+    const previousToDeliver = useRef<number>();
+    const arrivalPlayed = useRef(false);
+    useEffect(() => {
+        if (mode !== "Run") {
+            previousToDeliver.current = undefined;
+            arrivalPlayed.current = false;
+            return;
+        }
+
+        if (previousToDeliver.current !== undefined && trainsLeftToDeliver < previousToDeliver.current && !arrivalPlayed.current) {
+            arrivalPlayed.current = true;
+            playSound("arrive");
+        }
+        previousToDeliver.current = trainsLeftToDeliver;
+    }, [mode, trainsLeftToDeliver]);
+
     const { state } = gameState;
     useEffect(() => {
         if (state === "Complete") {
+            playSound("success");
             setMode("Complete");
+        } else if (state === "Crashed") {
+            playSound("fail");
         }
     }, [state, setMode]);
 

@@ -1,4 +1,5 @@
 import AdHost from './Components/AdHost';
+import AudioControl from './Components/AudioControl';
 import GameSurface from './Components/GameSurface';
 
 export default function App() {
@@ -6,6 +7,7 @@ export default function App() {
     <>
       <GameSurface />
       <AdHost />
+      <AudioControl />
     </>
   );
 }
