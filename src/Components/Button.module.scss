@@ -1,6 +1,6 @@
 @mixin button {
-    background-color: #222;
-    color: white;
+    background-color: #4b3a2b;
+    color: #fbf1d6;
     font-size: 16px;
     line-height: 22px;
     font-weight: 600;
@@ -10,7 +10,7 @@
     border-width: 2px;
     border-style: solid;
     border-radius: 10px;
-    box-shadow: 0 0 5px #000;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35), 0 4px 10px rgba(0, 0, 0, 0.25);
 }
 
 .button {
@@ -21,29 +21,30 @@
     cursor: pointer;
 
     &.green {
-        border-color: green;
+        border-color: #8cc57a;
     }
 
     &.yellow {
-        border-color: yellow;
+        border-color: #f0d36a;
     }
 
     &.red {
-        border-color: red;
+        border-color: #e4766c;
     }
 
     &.blue {
-        border-color: cornflowerblue;
+        border-color: #7fa9e0;
     }
 
     &.purple {
-        border-color: darkslateblue;
+        border-color: #a58ad0;
     }
 
     &[disabled] {
         cursor: default;
-        color: gray;
-        border-color: gray;
+        color: #a99a82;
+        border-color: #8a7b66;
+        opacity: 0.8;
     }
 }
 

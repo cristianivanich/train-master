@@ -1,9 +1,10 @@
 @mixin box {
     padding: 10px;
-    border: 1px solid gray;
+    border: 3px solid #c9a96a;
 
-    border-radius: 15px;
-    background-color: #345;
+    border-radius: 18px;
+    background-color: rgba(46, 60, 46, 0.93);
+    box-shadow: 0 6px 22px rgba(40, 60, 40, 0.45), inset 0 0 0 2px rgba(255, 244, 214, 0.12);
 }
 
 .wrapper {
@@ -26,7 +27,7 @@
     h1 {
         font-size: 22px;
         font-weight: 600;
-        color: lightblue;
+        color: #f3e3b3;
         margin: 0;
     }
 }
@@ -41,7 +42,7 @@
     justify-content: space-between;  
     
     h1 {
-        color: yellowgreen;
+        color: #cfe8a0;
     }
 }
 

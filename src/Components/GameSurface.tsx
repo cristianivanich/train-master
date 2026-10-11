@@ -1,8 +1,8 @@
 import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { clearLine } from 'readline';
 import { Game, GameCell, GameState } from '../Game/Game';
 import { findLevelByName, puzzleGroups } from '../Game/Levels';
-import { saveSolution } from '../Game/Storage';
+import { showRewardedAd } from '../Game/AdService';
+import { isUnlocked, saveSolution, setUnlocked } from '../Game/Storage';
 import { Undo, UndoContext, UndoState } from '../Game/Undo';
 import Button, { ButtonColumn } from './Button';
 import Canvas from './Canvas';
@@ -16,6 +16,7 @@ import LevelSelect, { getTotalPoints } from './LevelSelect';
 import MyPuzzles from './MyPuzzles';
 import { Speed } from './Speed';
 import Status from './Status';
+import TitleLogo from './TitleLogo';
 
 export type Mode = "Menu" | "Regular" | "Bonus" | "Featured" | "Engineer" | "Build" | "Erase" | "Run" | "Complete" | "Editor";
 
@@ -211,24 +212,38 @@ function UndoContextProvider({ children, setGame }: { children: React.ReactNode,
 
 function MainMenu({ setMode }: { setMode: (value: Mode) => void }) {
     const points = useMemo(() => getTotalPoints(), []);
+    const [, refresh] = useState(0);
+    const bonusLocked = points < 425 && !isUnlocked('mode-Bonus');
+    const featuredLocked = points < 200 && !isUnlocked('mode-Featured');
+
+    const unlockWithAd = async (mode: 'Bonus' | 'Featured') => {
+        if (await showRewardedAd('long', mode === 'Bonus' ? 'los Puzzles Bonus' : 'los Puzzles Destacados')) {
+            setUnlocked(`mode-${mode}`);
+            refresh(n => n + 1);
+        }
+    };
+
     return (
         <Dialog>
-            <div className={styles.titleBar}>
-                <div className={styles.title}>Trainyard</div>
-                <div className={styles.subTitle}>A puzzle solving game</div>
-            </div>
+            <TitleLogo />
 
             <DemoGame />
 
             <div className={styles.menuButtons}>
                 <Row>
                     <Button buttonColor="green" onClick={() => setMode("Regular")}>Start</Button>
-                    <Button buttonColor="blue" onClick={() => setMode("Bonus")} disabled={points < 425}>Bonus<br />Puzzles</Button>
+                    <Button buttonColor="blue" onClick={() => setMode("Bonus")} disabled={bonusLocked}>Bonus<br />Puzzles</Button>
                 </Row>
                 <Row>
-                    <Button buttonColor="purple" onClick={() => setMode("Featured")} disabled={points < 200}>Featured<br />Puzzles</Button>
+                    <Button buttonColor="purple" onClick={() => setMode("Featured")} disabled={featuredLocked}>Featured<br />Puzzles</Button>
                     <Button buttonColor="yellow" onClick={() => setMode("Engineer")}>My Puzzles</Button>
                 </Row>
+                {(bonusLocked || featuredLocked) && (
+                    <Row>
+                        {featuredLocked && <Button buttonColor="yellow" onClick={() => unlockWithAd('Featured')}>&#x1F3AC; Desbloquear Featured</Button>}
+                        {bonusLocked && <Button buttonColor="yellow" onClick={() => unlockWithAd('Bonus')}>&#x1F3AC; Desbloquear Bonus</Button>}
+                    </Row>
+                )}
             </div>
         </Dialog>
     )

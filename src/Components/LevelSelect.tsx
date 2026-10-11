@@ -1,8 +1,9 @@
 import _ from "lodash";
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import { buildGame, Puzzle, PuzzleGroup, puzzleGroups } from "../Game/Levels";
-import { getSolution, loadSolution, Solution } from "../Game/Storage";
-import Button from "./Button";
+import { showRewardedAd } from "../Game/AdService";
+import { getSolution, isUnlocked, loadSolution, setUnlocked, Solution } from "../Game/Storage";
+import Button, { ButtonColumn } from "./Button";
 import Canvas from "./Canvas";
 import { Header, Row } from "./Dialog";
 import GameContext, { GameSetterContext } from "./GameContext";
@@ -27,11 +28,27 @@ function LevelGroup({ group, setGroup }: { group: PuzzleGroup, setGroup: React.D
     const fullySolved = solved.length === group.puzzles.length;
 
     const totalPoints = useMemo(getTotalPoints, []);
-    const isLocked = group.difficulty && totalPoints < group.difficulty;
+    const [, refresh] = useState(0);
+    const adUnlocked = isUnlocked(`group-${group.name}`) || isUnlocked(`mode-${group.mode}`);
+    const required = group.difficulty ?? 0;
+    const isLocked = !adUnlocked && required > 0 && totalPoints < required;
+
+    const unlockWithAd = async () => {
+        //Worlds ask for the long video; the player skips the star requirement entirely
+        if (await showRewardedAd("long", `el mundo ${group.name}`)) {
+            setUnlocked(`group-${group.name}`);
+            refresh(n => n + 1);
+        }
+    };
 
     let button;
     if (isLocked) {
-        button = <Button disabled>{group.difficulty - totalPoints} &#x2605; to unlock</Button>;
+        button = (
+            <ButtonColumn>
+                <Button disabled>{required - totalPoints} &#x2605; para desbloquear</Button>
+                <Button buttonColor="yellow" onClick={unlockWithAd}>&#x1F3AC; Desbloquear con video</Button>
+            </ButtonColumn>
+        );
     } else if (group.puzzles.length === 0) {
         button = <Button disabled>Empty</Button>;
     } else if (fullySolved) {

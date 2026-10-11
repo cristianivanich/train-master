@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Neuton:wght@200;300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,600;1,9..144,800&display=swap');
 
 body {
   margin: 0;
@@ -9,7 +10,20 @@ body {
 
 body, html {
   height: 100%;
-  background-color: #122;
+  background-color: #cfe6ea;
+}
+
+/* A painted-sky backdrop: soft clouds, distant hills, a cottage and a meadow */
+body {
+  background:
+    radial-gradient(ellipse 22% 9% at 18% 14%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(ellipse 14% 6% at 26% 17%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(ellipse 24% 8% at 76% 9%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(ellipse 15% 6% at 86% 13%, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(circle at 88% 6%, rgba(255, 244, 196, 0.9), rgba(255, 244, 196, 0) 18%),
+    url('./assets/hills.svg') center bottom / 100% auto no-repeat,
+    linear-gradient(180deg, #8fc7e8 0%, #bfe0ee 40%, #e4f1d4 68%, #a9d08c 100%);
+  background-attachment: fixed;
 }
 
 html,

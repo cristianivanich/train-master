@@ -128,3 +128,21 @@ export function gameToCellDefinitions(game: Game): (GameCell & Coordinate)[] {
     });
     return cells;
 }
+
+
+/** Ad-unlocked content (worlds / modes). Stored as a flag so it bypasses the star requirement. */
+export function isUnlocked(key: string): boolean {
+    try {
+        return localStorage.getItem(`unlocked-${key}`) === '1';
+    } catch {
+        return false;
+    }
+}
+
+export function setUnlocked(key: string): void {
+    try {
+        localStorage.setItem(`unlocked-${key}`, '1');
+    } catch {
+        //Storage can be unavailable (private mode); the unlock just won't persist
+    }
+}

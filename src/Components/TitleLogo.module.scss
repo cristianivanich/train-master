@@ -1,0 +1,90 @@
+.logo {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 8px 0 10px;
+    text-align: center;
+    user-select: none;
+}
+
+.steam {
+    position: absolute;
+    top: -16px;
+    right: 6%;
+    width: 120px;
+    fill: #fff;
+    opacity: 0.85;
+    animation: drift 7s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+    from { transform: translateX(-10px); opacity: 0.55; }
+    to { transform: translateX(14px); opacity: 0.9; }
+}
+
+.title {
+    display: flex;
+    gap: 0.45em;
+    font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
+    font-style: italic;
+    font-weight: 800;
+    font-size: clamp(34px, 9vw, 54px);
+    line-height: 1;
+    letter-spacing: 0.01em;
+    color: #fff3cf;
+
+    /* painted outline + warm glow, in the spirit of hand-lettered film titles */
+    -webkit-text-stroke: 1.5px #5a3b22;
+    paint-order: stroke fill;
+    text-shadow:
+        0 3px 0 #5a3b22,
+        0 0 18px rgba(255, 236, 170, 0.75),
+        0 6px 14px rgba(40, 60, 40, 0.5);
+}
+
+.ribbon {
+    position: relative;
+    margin-top: 8px;
+    padding: 3px 26px 4px;
+    font-family: 'Fraunces', Georgia, serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: clamp(18px, 4.6vw, 24px);
+    letter-spacing: 0.32em;
+    text-indent: 0.32em;
+    text-transform: uppercase;
+    color: #fbf1d6;
+    background: linear-gradient(180deg, #c9694b, #ab5539);
+    border-top: 2px solid #f0b99f;
+    border-bottom: 2px solid #7a3b2a;
+    border-radius: 4px;
+    box-shadow: 0 3px 8px rgba(40, 30, 20, 0.4);
+
+    &::before,
+    &::after {
+        content: "";
+        position: absolute;
+        top: 6px;
+        width: 18px;
+        height: 100%;
+        background: #8f452f;
+        z-index: -1;
+    }
+
+    &::before {
+        left: -12px;
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 30% 50%);
+    }
+
+    &::after {
+        right: -12px;
+        clip-path: polygon(0 0, 100% 0, 70% 50%, 100% 100%, 0 100%);
+    }
+}
+
+.rail {
+    margin-top: 8px;
+    width: min(300px, 80%);
+    height: auto;
+}
