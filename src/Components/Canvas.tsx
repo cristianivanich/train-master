@@ -13,6 +13,7 @@ import TrackCell from './Cells/TrackCell';
 import GameContext, { BuildContext, GameStateContext } from './GameContext';
 import { SelectedCellContext } from './LevelEditor';
 import TrainIcon from './TrainIcon';
+import { CELL } from '../Utils/trainPath';
 
 function CellContent({ cell }: { cell: Readonly<GameCell> }) {
     switch (cell.type) {
@@ -39,10 +40,8 @@ function CellContent({ cell }: { cell: Readonly<GameCell> }) {
 function Cell({ cell }: { cell: Readonly<GameCell> }) {
     const game = useContext(GameContext);
     const onBuildEvent = useContext(BuildContext);
-    const gameState = useContext(GameStateContext);
     const selectedCell = useContext(SelectedCellContext);
     const cellCoordinate = useMemo(() => game.getCoordinate(cell), [cell, game]);
-    const trains = gameState.trains.filter(t => t.position.col === cellCoordinate?.col && t.position.row === cellCoordinate?.row);
 
     const [cellRef, setCellRef] = useState<HTMLElement | null>(null);
     const enterEdge = useRef<TrainDirection>();
@@ -137,7 +136,6 @@ function Cell({ cell }: { cell: Readonly<GameCell> }) {
             onClick={click}
             ref={setCellRef}>
             <CellContent cell={cell} />
-            {trains.map((t, i) => <TrainIcon key={i} train={t} />)}
         </div>
     );
 }
@@ -150,14 +148,36 @@ function Row({ row }: { row: ReadonlyArray<GameCell> }) {
     );
 }
 
+/**
+ * Trains live in a single overlay on top of the grid instead of inside each cell: they are never
+ * unmounted when they cross a cell boundary, and they can overhang cell edges without being clipped.
+ */
+function TrainLayer() {
+    const game = useContext(GameContext);
+    const { trains } = useContext(GameStateContext);
+    if (trains.length === 0) {
+        return null;
+    }
+
+    return (
+        <svg
+            className={styles.trainLayer}
+            viewBox={`0 0 ${game.width * CELL} ${game.height * CELL}`}
+            xmlns="http://www.w3.org/2000/svg">
+            {trains.map((t, i) => <TrainIcon key={t.id ?? i} train={t} />)}
+        </svg>
+    );
+}
+
 export default function Canvas({ className, preview }: { className?: string, preview?: boolean }) {
     const game = useContext(GameContext);
     const { grid } = game;
 
     return (
         <div className={`${styles.wrapper} ${className ?? ''} ${preview ? styles.preview : ''}`}>
-            <div className={styles.container}>
+            <div className={styles.container} style={{ gridTemplateColumns: `repeat(${game.width}, 1fr)` }}>
                 {grid.map((r, i) => <Row key={i} row={r} />)}
+                <TrainLayer />
             </div>
         </div>
     );

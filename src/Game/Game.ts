@@ -10,6 +10,9 @@ export type Coordinate = {
 }
 
 export type Train = {
+    /** Stable identity so the renderer can keep one DOM node per train across ticks */
+    id?: number;
+
     color: TrainColor;
 
     /** The coordinate of the current block */
@@ -85,6 +88,11 @@ function createGrid(height: number, width: number) {
 
 const frameTime = 1;
 
+/** Longest frame delta we accept; stops trains teleporting after the tab was in the background */
+const maxFrameDelta = 100;
+
+const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
 export type GameRunState = "Running" | "Crashed" | "Complete";
 
 export class GameState {
@@ -124,6 +132,11 @@ export class Game {
     private state: GameState;
     private interval?: NodeJS.Timer;
 
+    /** Fraction (0..1+) of the current block already travelled, as of `lastFrame` */
+    private progress = 0;
+    private lastFrame = 0;
+    private nextTrainId = 1;
+
     /** Callback when game state changes */
     onTick?: (state: GameState) => void;
 
@@ -138,13 +151,29 @@ export class Game {
         this.state = new GameState("Running", 0);
     }
 
-    private isNextFrame(thisTick: number): boolean {
-        if (this.state.tick === 0) {
-            //Always perform the first cycle on the first frame
-            return true;
-        }
+    /**
+     * Accumulate elapsed time into the block phase. Because the phase is accumulated (never derived
+     * from wall-clock timestamps) a speed change mid-block can't move a train backwards, and the
+     * remainder is carried over to the next block so there is no drift or overshoot.
+     */
+    private advance(): void {
+        const t = now();
+        const dt = Math.min(Math.max(t - this.lastFrame, 0), maxFrameDelta);
+        this.lastFrame = t;
+        this.progress += dt / Math.max(this.ticksPerBlock, 1);
+    }
 
-        return thisTick - this.state.tick > this.ticksPerBlock;
+    /**
+     * Smooth, monotonic progress through the current block (0 = just entered, 1 = about to leave).
+     * Safe to call every animation frame; it never mutates the simulation.
+     */
+    getProgress(): number {
+        if (this.interval === undefined) {
+            return 0;
+        }
+        const dt = Math.min(Math.max(now() - this.lastFrame, 0), maxFrameDelta);
+        const p = this.progress + dt / Math.max(this.ticksPerBlock, 1);
+        return p < 0 ? 0 : p > 1 ? 1 : p;
     }
 
     start() {
@@ -153,6 +182,9 @@ export class Game {
         const sourceState = this.getDefaultTrainState("Source");
 
         this.state = new GameState("Running", 0, [], new Map(), targetState, sourceState);
+        this.progress = 0;
+        this.lastFrame = now();
+        this.nextTrainId = 1;
         this.interval = setInterval(this.doTick.bind(this), frameTime);
     }
 
@@ -200,9 +232,18 @@ export class Game {
 
     doTick() {
         const thisTick = Date.now();
-        if (!this.isNextFrame(thisTick)) {
+        const isFirstBlock = this.state.tick === 0;
+        this.advance();
+
+        if (isFirstBlock) {
+            //Always perform the first cycle on the first frame
+            this.progress = 0;
+        } else if (this.progress < 1) {
             //Nothing to do yet
             return;
+        } else {
+            //Carry the fractional remainder into the next block
+            this.progress -= Math.floor(this.progress);
         }
 
         //Gotta do REAL shit!
@@ -407,6 +448,7 @@ export class Game {
 
         for (let i = 0; i <= 1; i++) {
             const newTrain: Train = {
+                id: this.nextTrainId++,
                 color: newColors[i],
                 towards: newDirections[i],
                 entrance: cell.direction,
@@ -497,6 +539,7 @@ export class Game {
                 //Produce a train!
                 const newTrain: Train = {
                     color: newState.shift()!,
+                    id: this.nextTrainId++,
                     entrance: getOppositeDirection(source.direction),
                     towards: source.direction,
                     position: this.getCoordinate(source)!

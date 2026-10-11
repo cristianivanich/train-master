@@ -1,136 +1,149 @@
-import { useContext, useEffect, useState } from "react";
-import { Game, GameState, Train, TrainColor } from "../Game/Game";
-import { getPointOnStar } from "../Utils/geometry";
-import GameContext, { GameStateContext } from "./GameContext";
-import styles from './TrainIcon.module.scss';
+import { useContext, useLayoutEffect, useRef } from "react";
+import { Train, TrainColor } from "../Game/Game";
+import { CELL, getTrainPose, unwrapHeading } from "../Utils/trainPath";
+import GameContext from "./GameContext";
+import styles from "./TrainIcon.module.scss";
 
-function getTrainCoordinates(train: Train, percent: number) {
-    const offset = 33 / 2;
+/** Soft, hand-painted palette shared by trains, sources, targets and paint pots */
+const PALETTE: Record<TrainColor, string> = {
+    Red: "#e4605a",
+    Orange: "#f2a24c",
+    Yellow: "#f4d664",
+    Green: "#7fc06f",
+    Blue: "#5c8fd6",
+    Purple: "#a07fcf",
+    Brown: "#9b6d4c",
+};
 
-    //Straight tracks
-    switch (`${train.entrance}-${train.towards}`) {
-        case "right-left":
-            return {
-                top: `33%`,
-                left: `${(1 - percent) * 100 - offset}%`
-            };
-        case "left-right":
-            return {
-                top: `33%`,
-                left: `${percent * 100 - offset}%`
-            };
-        case "top-bottom":
-            return {
-                top: `${percent * 100 - offset}%`,
-                left: `33%`
-            };
-        case "bottom-top":
-            return {
-                top: `${(1 - percent) * 100 - offset}%`,
-                left: `33%`
-            };
-    }
-
-    //Corner tracks
-    let angle = null;
-    switch (`${train.entrance}-${train.towards}`) {
-        case "top-right":
-            angle = 0 + percent * 90;
-            break;
-        case "right-bottom":
-            angle = 90 + percent * 90;
-            break;
-        case "bottom-left":
-            angle = 180 + percent * 90;
-            break;
-        case "left-top":
-            angle = 270 + percent * 90;
-            break;
-        case "top-left":
-            angle = 0 - percent * 90;
-            break;
-        case "left-bottom":
-            angle = 270 - percent * 90;
-            break;
-        case "bottom-right":
-            angle = 180 - percent * 90;
-            break;
-        case "right-top":
-            angle = 90 - percent * 90;
-            break;
-    }
-
-    const point = getPointOnStar(angle ?? 0);
-    return {
-        top: `${(1 - point.y) * 100 - offset}%`,
-        left: `${point.x * 100 - offset}%`
-    };
+export function getIconColor(trainColor: TrainColor) {
+    return PALETTE[trainColor] ?? trainColor;
 }
 
-function getCyclePercent(game: Game, gameState: GameState): number {
-    //TODO: if game speed is decreased quickly this can actually move backwards
-    const ticksThisCycle = Date.now() - gameState.tick;
-    return ticksThisCycle / game.ticksPerBlock;
+/** Mix a hex colour towards white, used for the steam so it is a washed-out version of the train */
+function tint(hex: string, amount: number) {
+    const n = parseInt(hex.slice(1), 16);
+    const mix = (c: number) => Math.round(c + (255 - c) * amount);
+    const r = mix((n >> 16) & 255), g = mix((n >> 8) & 255), b = mix(n & 255);
+    return `rgb(${r}, ${g}, ${b})`;
 }
 
-function TrainSvg({ ...props }: React.SVGProps<SVGSVGElement>) {
-    //From https://www.svgrepo.com/svg/18302/train
+const PUFFS = 4;
+const PUFF_PERIOD_MS = 1600;
+
+/** A tiny steam locomotive seen from above, drawn facing +x so it can simply be rotated to its heading */
+function Locomotive({ color, bodyRef }: { color: string; bodyRef: React.Ref<SVGGElement> }) {
     return (
-        <svg fill="currentColor" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 288.618 288.618" {...props} className={styles.train}>
-            <g>
-                <path d="M287.985,215.049l-9.848-24.938c-1.365-3.458-4.706-5.73-8.424-5.73h-33.89c4.387,0,8.465-2.258,10.794-5.976
-                c16.747-26.736,16.747-60.691,0-87.428c-2.329-3.719-6.407-5.977-10.795-5.977h-11.347V53.66h5.851
-                c3.616,0,6.548-2.932,6.548-6.548V39.94c0-3.616-2.932-6.548-6.548-6.548h-48.184c-3.616,0-6.548,2.932-6.548,6.548v7.172
-                c0,3.616,2.932,6.548,6.548,6.548h5.851v31.342h-38.869V29.45c0-5.003-4.055-9.058-9.057-9.058H9.057
-                C4.055,20.392,0,24.447,0,29.45v13.875c0,5.002,4.055,9.057,9.057,9.057h10.101v132H9.057c-5.002,0-9.057,4.055-9.057,9.057v24.938
-                c0,5.003,4.055,9.058,9.057,9.058h19.682v-0.001c0-30.765,25.028-55.793,55.793-55.793c30.765,0,55.794,25.028,55.794,55.793v0.001
-                h26.992c5.183-17.839,21.663-30.919,41.151-30.919c19.488,0,35.969,13.08,41.152,30.919h29.939c2.999,0,5.803-1.483,7.489-3.963
-                C288.736,220.991,289.086,217.838,287.985,215.049z M116.777,136.744c0,4.705-3.814,8.52-8.52,8.52H57.782
-                c-4.705,0-8.52-3.814-8.52-8.52V94.139c0-18.645,15.113-33.758,33.757-33.758c18.645,0,33.758,15.113,33.758,33.758V136.744z"/>
-                <path d="M208.469,210.514c-15.34,0-27.877,11.971-28.796,27.079c-5.911,0-49.787,0-55.624,0c0.833-3.248,1.276-6.653,1.276-10.161
-                c0-22.529-18.264-40.793-40.794-40.793c-22.529,0-40.793,18.264-40.793,40.793c0,22.53,18.264,40.794,40.793,40.794
-                c13.033,0,24.63-6.119,32.098-15.633c23.751,0,41.245,0,66.195,0c4.796,9.283,14.476,15.633,25.645,15.633
-                c15.938,0,28.856-12.919,28.856-28.856C237.325,223.433,224.406,210.514,208.469,210.514z"/>
-            </g>
-        </svg>
+        <g ref={bodyRef}>
+            {/* coupling + cowcatcher */}
+            <rect x={-20} y={-1.4} width={5} height={2.8} rx={1} fill="#5a4a3e" />
+            <path d="M15 -6 L22 0 L15 6 Z" fill="#6b5a4c" stroke="#4a3b30" strokeWidth={0.8} strokeLinejoin="round" />
+
+            {/* wheels peeking out from under the boiler */}
+            {[-11, -3, 5, 12].map(x => (
+                <g key={x}>
+                    <rect x={x - 2.6} y={-9.6} width={5.2} height={3} rx={1.2} fill="#3f3a36" />
+                    <rect x={x - 2.6} y={6.6} width={5.2} height={3} rx={1.2} fill="#3f3a36" />
+                </g>
+            ))}
+
+            {/* boiler */}
+            <rect className={styles.paint} x={-5} y={-7} width={21} height={14} rx={7} fill={color} stroke="#4a3b30" strokeWidth={1} />
+            <rect x={-1} y={-5.4} width={14} height={2.2} rx={1.1} fill="#fff" opacity={0.3} />
+            <path d="M3 -7 V7 M9 -7 V7" stroke="#b8893f" strokeWidth={1.1} opacity={0.9} />
+
+            {/* smokebox front */}
+            <circle cx={15.5} cy={0} r={4.2} fill="#4d4640" stroke="#33302c" strokeWidth={0.6} />
+            <circle cx={15.5} cy={0} r={1.4} fill="#e8d9a8" />
+
+            {/* steam dome and chimney */}
+            <circle cx={5} cy={0} r={3} fill="#d9a441" stroke="#8c6522" strokeWidth={0.7} />
+            <circle cx={5} cy={-0.8} r={1} fill="#fff" opacity={0.5} />
+            <circle cx={11} cy={0} r={3.3} fill="#3f3a36" stroke="#2a2724" strokeWidth={0.6} />
+            <circle cx={11} cy={0} r={1.8} fill="#171512" />
+
+            {/* cab */}
+            <rect x={-17} y={-8.4} width={13} height={16.8} rx={2.6} fill="#c06f50" stroke="#6d3a29" strokeWidth={0.9} />
+            <path d="M-10.5 -8 V8" stroke="#8f4a33" strokeWidth={1} />
+            <rect x={-15.5} y={-6.6} width={3} height={13.2} rx={1.2} fill="#fff" opacity={0.18} />
+        </g>
     );
 }
 
 export default function TrainIcon({ train }: { train: Train }) {
     const game = useContext(GameContext);
-    const gameState = useContext(GameStateContext);
-    const percent = getCyclePercent(game, gameState);
-    const coordinates = getTrainCoordinates(train, percent);
-    const [, setTick] = useState(0);
+    const gameRef = useRef(game);
+    const trainRef = useRef(train);
+    gameRef.current = game;
+    trainRef.current = train;
 
-    useEffect(() => {
-        //Want to rerender every browser frame to update the position
-        const interval = setInterval(() => setTick(c => (c + 1) % 1000000), 1);
+    const groupRef = useRef<SVGGElement>(null);
+    const bodyRef = useRef<SVGGElement>(null);
+    const shadowRef = useRef<SVGGElement>(null);
+    const puffRefs = useRef<Array<SVGCircleElement | null>>([]);
+    const lastHeading = useRef<number>();
 
-        return () => clearInterval(interval);
+    const paint = getIconColor(train.color);
+
+    //useLayoutEffect so the very first frame of a new block is already positioned (no one-frame flash at 0,0)
+    useLayoutEffect(() => {
+        let raf = 0;
+        const born = performance.now();
+
+        const frame = (time: number) => {
+            const t = trainRef.current;
+            const g = gameRef.current;
+            const cell = g.getCellAtCoordinate(t.position);
+            const startsAtCentre = cell?.type === "Source" || cell?.type === "Splitter";
+
+            const pose = getTrainPose(t, g.getProgress(), startsAtCentre);
+
+            //Keep the heading continuous so the sprite never spins the long way round
+            const heading = unwrapHeading(lastHeading.current, pose.heading);
+            lastHeading.current = heading;
+
+            const x = t.position.col * CELL + pose.x;
+            const y = t.position.row * CELL + pose.y;
+            groupRef.current?.setAttribute("transform", `translate(${x.toFixed(2)} ${y.toFixed(2)})`);
+            bodyRef.current?.setAttribute("transform", `rotate(${heading.toFixed(2)})`);
+            shadowRef.current?.setAttribute("transform", `translate(1.6 2.4) rotate(${heading.toFixed(2)})`);
+
+            //Steam drifting out behind the chimney
+            const clock = (time - born) / PUFF_PERIOD_MS;
+            puffRefs.current.forEach((puff, i) => {
+                if (!puff) return;
+                const age = (clock + i / PUFFS) % 1;
+                const px = 11 - 8 - age * 20;
+                const py = Math.sin((clock + i) * 5) * 2.2 * age;
+                puff.setAttribute("cx", px.toFixed(2));
+                puff.setAttribute("cy", py.toFixed(2));
+                puff.setAttribute("r", (2.2 + age * 5).toFixed(2));
+                puff.setAttribute("opacity", (0.75 * (1 - age) * Math.min(1, age * 6)).toFixed(3));
+            });
+
+            raf = requestAnimationFrame(frame);
+        };
+
+        //Runs once synchronously (before paint) and then keeps itself scheduled
+        frame(performance.now());
+        return () => cancelAnimationFrame(raf);
     }, []);
 
-    const color = getIconColor(train.color);
-    return <TrainSvg style={{ ...coordinates, color: color }} data-path={`${train.entrance}-${train.towards}`} />;
-}
+    //Position is applied imperatively; a block change just updates trainRef and the next frame picks it up
+    const steam = tint(paint, 0.62);
 
-export function getIconColor(trainColor: TrainColor) {
-    switch (trainColor) {
-        case "Red":
-            return "red";
-        case "Orange":
-            return "darkorange";
-        case "Yellow":
-            return "yellow";
-        case "Green":
-            return "lime";
-        case "Blue":
-            return "#1B51CC";
-        case "Purple":
-            return "blueviolet";
-        case "Brown":
-            return "saddlebrown";
-        default:
-            return trainColor;
-    }
+    return (
+        <g ref={groupRef} className={styles.train} data-path={`${train.entrance}-${train.towards}`}>
+            <g ref={shadowRef} opacity={0.22}>
+                <rect x={-20} y={-9} width={42} height={18} rx={8} fill="#1d2b22" />
+            </g>
+
+            <g className={styles.steam} style={{ fill: steam }}>
+                {Array.from({ length: PUFFS }, (_, i) => (
+                    <circle key={i} ref={el => { puffRefs.current[i] = el; }} r={2} opacity={0} />
+                ))}
+            </g>
+
+            <Locomotive color={paint} bodyRef={bodyRef} />
+        </g>
+    );
 }

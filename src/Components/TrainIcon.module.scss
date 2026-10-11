@@ -1,6 +1,13 @@
 .train {
-    position: absolute;
-    width: 33%;
-    height: 33%;
-    z-index: 100;
+    pointer-events: none;
+}
+
+/* Steam and paint both ease to the new colour when trains are mixed or painted */
+.steam circle,
+.steam {
+    transition: fill 0.45s ease;
+}
+
+.paint {
+    transition: fill 0.3s ease;
 }

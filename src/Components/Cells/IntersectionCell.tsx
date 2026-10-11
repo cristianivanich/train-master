@@ -30,7 +30,7 @@ export default function IntersectionCell({ cell }: { cell: Readonly<Intersection
         //Track1 on top
         return (
             <IconSvg>
-                <TrackSvg direction={cell.track2} color="#777" />
+                <TrackSvg direction={cell.track2} dim />
                 <TrackSvg direction={cell.track1} />
             </IconSvg>
         );
@@ -38,7 +38,7 @@ export default function IntersectionCell({ cell }: { cell: Readonly<Intersection
         //Track2 on top
         return (
             <IconSvg>
-                <TrackSvg direction={cell.track1} color="#777" />
+                <TrackSvg direction={cell.track1} dim />
                 <TrackSvg direction={cell.track2} />
             </IconSvg>
         );
